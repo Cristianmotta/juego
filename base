@@ -1,0 +1,128 @@
+import pygame
+import sys
+import random
+
+# Inicializar Pygame
+pygame.init()
+
+# Configuración de la pantalla
+ancho_pantalla = 1024
+alto_pantalla = 1024
+pantalla = pygame.display.set_mode((ancho_pantalla, alto_pantalla))
+pygame.display.set_caption("Juego de Esquivar Objetos")
+background = pygame.image.load("fondo.png").convert()
+
+
+# Colores
+blanco = (255, 255, 255)
+rojo = (255, 0, 0)
+
+# Clase para el jugador principal
+class Jugador(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((50, 50))
+        self.image.fill(rojo)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = ancho_pantalla // 2
+        self.rect.centery = alto_pantalla // 2
+        self.velocidad_x = 0
+        self.velocidad_y = 0
+        
+
+    def update(self):
+        self.velocidad_x = 0
+        self.velocidad_y = 0
+        teclas = pygame.key.get_pressed()
+        if teclas[pygame.K_LEFT]:
+            self.velocidad_x = -5
+        if teclas[pygame.K_RIGHT]:
+            self.velocidad_x = 5
+        if teclas[pygame.K_UP]:
+            self.velocidad_y = -5
+        if teclas[pygame.K_DOWN]:
+            self.velocidad_y = 5
+        self.rect.x += self.velocidad_x
+        self.rect.y += self.velocidad_y
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.right > ancho_pantalla:
+            self.rect.right = ancho_pantalla
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > alto_pantalla:
+            self.rect.bottom = alto_pantalla
+
+# Clase para el enemigo
+class Enemigo(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((30, 30))
+        self.image.fill((255, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(0, ancho_pantalla - 30)
+        self.rect.y = random.randrange(0, alto_pantalla - 30)
+        self.velocidad_x = random.choice([-3, 3])
+        self.velocidad_y = random.choice([-3, 3])
+
+    def update(self):
+        self.rect.x += self.velocidad_x
+        self.rect.y += self.velocidad_y
+        if self.rect.left < 0 or self.rect.right > ancho_pantalla:
+            self.velocidad_x = -self.velocidad_x
+        if self.rect.top < 0 or self.rect.bottom > alto_pantalla:
+            self.velocidad_y = -self.velocidad_y
+
+# Crear grupos de sprites
+todos_los_sprites = pygame.sprite.Group()
+jugador = Jugador()
+enemigo = Enemigo()
+todos_los_sprites.add(jugador)
+todos_los_sprites.add(enemigo)
+
+# Reloj para controlar la velocidad de actualización
+reloj = pygame.time.Clock()
+
+# Puntuación
+puntuacion = 0
+puntaje_maximo = 0
+
+# Bucle principal del juego
+terminado = False
+while not terminado:
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            terminado = True            
+
+    # Actualizar
+    todos_los_sprites.update()
+    
+
+    # Verificar colisión entre jugador principal y enemigo
+    if pygame.sprite.collide_rect(jugador, enemigo):
+        enemigo.rect.x = random.randrange(0, ancho_pantalla - 30)
+        enemigo.rect.y = random.randrange(0, alto_pantalla - 30)
+        if puntuacion > puntaje_maximo:
+            puntaje_maximo = puntuacion
+        puntuacion = 0  # Reiniciar la puntuación
+
+    # Dibujar
+    pantalla.blit(background, [0, 0])
+    todos_los_sprites.draw(pantalla)
+
+    # Dibujar la puntuación y el puntaje máximo en la pantalla
+    fuente = pygame.font.Font(None, 36)
+    texto_puntuacion = fuente.render(f"Puntuación: {puntuacion}", True, blanco)
+    texto_maximo = fuente.render(f"Puntaje Máximo: {puntaje_maximo}", True, blanco)
+    pantalla.blit(texto_puntuacion, (10, 10))
+    pantalla.blit(texto_maximo, (10, 50))
+    
+    
+   
+    pygame.display.flip()
+
+    # Controlar la velocidad de actualización
+    reloj.tick(60)
+
+pygame.quit()
+sys.exit()
